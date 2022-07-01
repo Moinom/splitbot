@@ -1,2 +1,3 @@
-# splitbot
+# the-great-divide
+
 Discord bot for assigning roles equally to server members
