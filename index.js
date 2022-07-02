@@ -1,7 +1,6 @@
 const DISCORD = require('discord.js');
 const DISCORD_CLIENT = new DISCORD.Client({ intents: ['GUILDS', 'GUILD_MESSAGES', 'GUILD_MEMBERS']});
-const FETCH = require('node-fetch');
-const FS = require('fs');
+require('dotenv').config();
 
 const prefix = '!divide';
 const roleNames = ['Blue', 'Red'];
@@ -17,7 +16,6 @@ DISCORD_CLIENT.on('disconnected', function () {
 });
 
 DISCORD_CLIENT.on('messageCreate', async (msg) => {
-
     // Only runs if prefix is correct and author is server owner
     const serverOwner = await msg.guild.fetchOwner();
     if (!msg.content.startsWith(prefix) || (msg.author.id !== serverOwner.id)) return;
@@ -41,7 +39,7 @@ DISCORD_CLIENT.on('messageCreate', async (msg) => {
 
     if (command === 'stop') {
         // remove roles
-        stopDivision(server);
+        resetDivision(server);
         msg.channel.send('Division stopped. Roles removed.')
         return;
     }
@@ -50,14 +48,14 @@ DISCORD_CLIENT.on('messageCreate', async (msg) => {
 DISCORD_CLIENT.login(process.env.TOKEN);
 
 async function startDivision(server) {
-
+    resetDivision(server);
     const memberMap = await server.members.fetch({ force: true }).catch(console.error);
     const members = shuffle(memberMap.map(member => member));
     const roles = await createRoles(server);
     addRolesToAllMembers(members, roles);
 }
 
-function stopDivision(server) {
+function resetDivision(server) {
     roleNames.forEach(roleName => {
         let role = server.roles.cache.find(role => role.name === roleName);
         if (role) role.delete();
@@ -67,7 +65,8 @@ function stopDivision(server) {
 async function createRoles(server) {
     const roles = [];
     for (let i in roleNames) {
-        let role = await server.roles.cache.find((x) => x.name === roleNames[i]);
+        const cachedRole = server.roles.cache.find((x) => x.name === roleNames[i]);
+        let role = cachedRole ? await server.roles.fetch(cachedRole.id, { force: true }) : null;
         if (!role) {
             // create role if doesn't exist
             role = await server.roles.create({
