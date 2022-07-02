@@ -1,13 +1,11 @@
+require('dotenv').config();
 const DISCORD = require('discord.js');
 const DISCORD_CLIENT = new DISCORD.Client({ intents: ['GUILDS', 'GUILD_MESSAGES', 'GUILD_MEMBERS']});
-require('dotenv').config();
-
 const prefix = '!divide';
 const roleNames = ['Blue', 'Red'];
 
 DISCORD_CLIENT.on('ready', () => {
     console.log('The great divide has begun.')
-    // listen to server joins and divide if division is active
 })
 
 DISCORD_CLIENT.on('disconnected', function () {
@@ -15,11 +13,15 @@ DISCORD_CLIENT.on('disconnected', function () {
 	process.exit(1);
 });
 
+DISCORD_CLIENT.on("guildMemberAdd", (member) => {
+    // listen to server joins and divide if division is active
+    addRoleToMember(member);
+})
+
 DISCORD_CLIENT.on('messageCreate', async (msg) => {
     // Only runs if prefix is correct and author is server owner
     const serverOwner = await msg.guild.fetchOwner();
     if (!msg.content.startsWith(prefix) || (msg.author.id !== serverOwner.id)) return;
-
     const message = msg.content.split(' ');
     const command = message[1];
     const server = DISCORD_CLIENT.guilds.resolve(msg.guild.id);
@@ -66,7 +68,7 @@ async function createRoles(server) {
     const roles = [];
     for (let i in roleNames) {
         const cachedRole = server.roles.cache.find((x) => x.name === roleNames[i]);
-        let role = cachedRole ? await server.roles.fetch(cachedRole.id, { force: true }) : null;
+        let role = cachedRole ? await server.roles.fetch(cachedRole.id, { force: true }).catch(console.error) : null;
         if (!role) {
             // create role if doesn't exist
             role = await server.roles.create({
@@ -99,4 +101,24 @@ function shuffle(array) {
       [array[currentIndex], array[randomIndex]] = [array[randomIndex], array[currentIndex]];
     }
     return array;
+}
+
+async function addRoleToMember(member) {
+    const server = DISCORD_CLIENT.guilds.resolve(member.guild.id);
+    const smallestRole = await findSmallestRole(server);
+    if (!smallestRole) return;
+    member.roles.add(smallestRole).catch(console.error);
+}
+
+async function findSmallestRole(server) {
+    const allRoles = await server.roles.fetch().catch(console.error);
+    let blueRole;
+    let redRole;
+
+    allRoles.forEach(role => {
+        if (role.name === 'Blue') blueRole = role;
+        if (role.name === 'Red') redRole = role;
+    })
+    if (!blueRole || !redRole) return null;
+    return blueRole.members.size < redRole.members.size ? blueRole.id : redRole.id;
 }
