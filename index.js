@@ -34,8 +34,9 @@ DISCORD_CLIENT.on('messageCreate', async (msg) => {
 
     if (command === 'start') {
         // add roles
+        msg.channel.send('The great divide has begun...')
         startDivision(server);
-        msg.channel.send('Division started. Roles assigned.')
+        msg.channel.send('Division completed. Roles assigned.')
         return;
     }
 
@@ -54,7 +55,7 @@ async function startDivision(server) {
     const memberMap = await server.members.fetch({ force: true }).catch(console.error);
     const members = shuffle(memberMap.map(member => member));
     const roles = await createRoles(server);
-    addRolesToAllMembers(members, roles);
+    await addRolesToAllMembers(members, roles);
 }
 
 function resetDivision(server) {
@@ -83,11 +84,11 @@ async function createRoles(server) {
     return roles;
 }
 
-function addRolesToAllMembers(members, roles) {
+async function addRolesToAllMembers(members, roles) {
     let roleCounter = 0;
     for (let i in members) {
-        // add role to members
-        members[i].roles.add(roles[roleCounter].id).catch(console.error);
+        // async should avoid rate limit
+        await members[i].roles.add(roles[roleCounter].id).catch(console.error);
         roleCounter++;
         if (roleCounter === roleNames.length) roleCounter = 0;
     }
