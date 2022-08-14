@@ -22,7 +22,7 @@ Start the node script with 'node index.js'. If you want the bot to keep assignin
 
 ## bot commands
 
-As long as the bot is online, it will add new server members to the role with the least members.
+As long as the bot is is active (!divide start has been sent), it will add new server members to the role with the least members.
 
 ### !divide start
 

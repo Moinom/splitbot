@@ -3,6 +3,7 @@ const DISCORD = require('discord.js');
 const DISCORD_CLIENT = new DISCORD.Client({ intents: ['GUILDS', 'GUILD_MESSAGES', 'GUILD_MEMBERS']});
 const prefix = '!divide';
 const roleNames = ['Blue', 'Red'];
+let isActive = false;
 
 DISCORD_CLIENT.on('ready', () => {
     console.log('The great divide has begun.')
@@ -34,16 +35,18 @@ DISCORD_CLIENT.on('messageCreate', async (msg) => {
 
     if (command === 'start') {
         // add roles
-        msg.channel.send('The great divide has begun...')
+        msg.channel.send('The great divide has begun...');
         startDivision(server);
-        msg.channel.send('Division completed. Roles assigned.')
+        isActive = true;
+        msg.channel.send('Division completed. Roles assigned.');
         return;
     }
 
     if (command === 'stop') {
         // remove roles
         resetDivision(server);
-        msg.channel.send('Division stopped. Roles removed.')
+        isActive = false;
+        msg.channel.send('Division stopped. Roles removed.');
         return;
     }
     
@@ -105,6 +108,7 @@ function shuffle(array) {
 }
 
 async function addRoleToMember(member) {
+    if (!isActive) return;
     const server = DISCORD_CLIENT.guilds.resolve(member.guild.id);
     const smallestRole = await findSmallestRole(server);
     if (!smallestRole) return;
