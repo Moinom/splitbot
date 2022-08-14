@@ -19,3 +19,19 @@ At the moment there are two roles hardcoded (red and blue), but this can easily 
 ## run your bot
 
 Start the node script with 'node index.js'. If you want the bot to keep assigning newly joined members to the roles, you'll have to host the bot to be always online.
+
+## bot commands
+
+As long as the bot is online, it will add new server members to the role with the least members.
+
+### !divide start
+
+Creates roles for red and blue, if they don't exist yet. Assigns roles equally between server members.
+
+### !divide stop
+
+Deletes the roles, roles will be automatically removed from server members when deleted.
+
+### !divide help
+
+Bot will send a message with an explanation of all commands.
