@@ -4,6 +4,8 @@ const DISCORD_CLIENT = new DISCORD.Client({
   intents: ["GUILDS", "GUILD_MESSAGES", "GUILD_MEMBERS"],
 });
 const prefix = "!divide";
+// role names can be changed and extended, just note that they are also used for the role colour.
+// If you want to use a different colour to the role name, you will need a separate colour array to use it in the createRoles function.
 const roleNames = ["Blue", "Red"];
 let isActive = false;
 
@@ -17,7 +19,7 @@ DISCORD_CLIENT.on("disconnected", function () {
 });
 
 DISCORD_CLIENT.on("guildMemberAdd", (member) => {
-  // listen to server joins and divide if division is active
+  // listens to server joins and divides if division is active
   addRoleToMember(member);
 });
 
