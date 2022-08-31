@@ -9,8 +9,12 @@ Invite the bot to your Discord server ([instructions here](https://discordjs.gui
 
 ## create a .env file
 
-Add your secret bot token to your .env file like:
+Create a file with the exact name ".env". Add your secret bot token to your .env file like:
 TOKEN='verySecretToken123456789'
+
+## install packages
+
+Open a terminal in the project folder. On Windows, you can shift + right click an empty space in the project folder and select "Open Terminal here" or "Open Powershell here". Run "npm i" or "npm install" (without the quotes) in the command line, to install all necessary packages.
 
 ## adjustments
 
@@ -18,7 +22,7 @@ At the moment there are two roles hardcoded (red and blue), but this can easily 
 
 ## run your bot
 
-Start the node script with 'node index.js'. If you want the bot to keep assigning newly joined members to the roles, you'll have to host the bot to be always online.
+Start the node script with 'node index.js' in your terminal (that is open in your project folder). If you want the bot to keep assigning newly joined members to the roles, you'll have to host the bot to be always online.
 
 ## bot commands
 
