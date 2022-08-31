@@ -7,9 +7,12 @@ const prefix = "!divide";
 // role names can be changed and extended, just note that they are also used for the role colour.
 // If you want to use a different colour to the role name, you will need a separate colour array to use it in the createRoles function.
 const roleNames = ["Blue", "Red"];
-let isActive = false;
+let isActive = {};
 
 DISCORD_CLIENT.on("ready", () => {
+  DISCORD_CLIENT.guilds.cache.forEach(
+    (serverId) => (isActive[serverId] = false)
+  );
   console.log("The great divide has begun.");
 });
 
@@ -20,7 +23,7 @@ DISCORD_CLIENT.on("disconnected", function () {
 
 DISCORD_CLIENT.on("guildMemberAdd", (member) => {
   // listens to server joins and divides if division is active
-  addRoleToMember(member);
+  addRoleToNewJoiner(member);
 });
 
 DISCORD_CLIENT.on("messageCreate", async (msg) => {
@@ -42,7 +45,7 @@ DISCORD_CLIENT.on("messageCreate", async (msg) => {
     // add roles
     msg.channel.send("The great divide has begun...");
     startDivision(server);
-    isActive = true;
+    isActive[server] = true;
     msg.channel.send("Division completed. Roles assigned.");
     return;
   }
@@ -50,7 +53,7 @@ DISCORD_CLIENT.on("messageCreate", async (msg) => {
   if (command === "stop") {
     // remove roles
     resetDivision(server);
-    isActive = false;
+    isActive[server] = false;
     msg.channel.send("Division stopped. Roles removed.");
     return;
   }
@@ -58,13 +61,12 @@ DISCORD_CLIENT.on("messageCreate", async (msg) => {
 DISCORD_CLIENT.login(process.env.TOKEN);
 
 async function startDivision(server) {
-  resetDivision(server);
   const memberMap = await server.members
     .fetch({ force: true })
     .catch(console.error);
   const members = shuffle(memberMap.map((member) => member));
   const roles = await createRoles(server);
-  await addRolesToAllMembers(members, roles);
+  await addRolesToMembers(members, roles, server);
 }
 
 function resetDivision(server) {
@@ -99,10 +101,27 @@ async function createRoles(server) {
   return roles;
 }
 
-async function addRolesToAllMembers(members, roles) {
+async function addRolesToMembers(members, roles, server) {
+  let [smallestRole, diff] = await findSmallestRole(server);
+  if (diff < 0) diff = diff * -1;
   let roleCounter = 0;
+
   for (let i in members) {
+    // only add role if member doesn't have one yet
+    let hasRole = false;
+    roleNames.forEach((roleName) => {
+      let role = members[i].roles.cache.find((role) => role.name === roleName);
+      if (role) hasRole = true;
+    });
+    if (hasRole) continue;
+
+    // add to smallest role to balance difference
     // async should avoid rate limit
+    if (diff > 0) {
+      await members[i].roles.add(smallestRole).catch(console.error);
+      diff--;
+      continue;
+    }
     await members[i].roles.add(roles[roleCounter].id).catch(console.error);
     roleCounter++;
     if (roleCounter === roleNames.length) roleCounter = 0;
@@ -123,10 +142,10 @@ function shuffle(array) {
   return array;
 }
 
-async function addRoleToMember(member) {
-  if (!isActive) return;
+async function addRoleToNewJoiner(member) {
   const server = DISCORD_CLIENT.guilds.resolve(member.guild.id);
-  const smallestRole = await findSmallestRole(server);
+  if (!isActive[server]) return;
+  const [smallestRole, diff] = await findSmallestRole(server);
   if (!smallestRole) return;
   member.roles.add(smallestRole).catch(console.error);
 }
@@ -141,9 +160,10 @@ async function findSmallestRole(server) {
     if (role.name === "Red") redRole = role;
   });
   if (!blueRole || !redRole) return null;
-  return blueRole.members.size < redRole.members.size
-    ? blueRole.id
-    : redRole.id;
+  return [
+    blueRole.members.size < redRole.members.size ? blueRole.id : redRole.id,
+    blueRole.members.size - redRole.members.size,
+  ];
 }
 
 function generateHelpMessage() {
@@ -156,7 +176,7 @@ function generateHelpMessage() {
         color: lightBlue,
         title: "General rules",
         description:
-          "Only the server owner can command this bot. You command this bot by starting your message with `!divide`",
+          "Only the server owner can command this bot. You command this bot by starting your message with `!divide`. If the bot went offline, you will have to run !divide start again once it's back to have it distribute roles to members who joined during offline time.",
       },
       {
         color: lightBlue,
@@ -174,7 +194,7 @@ function generateHelpMessage() {
         color: lightBlue,
         title: "New members",
         description:
-          "After `!divide start` was used, the division is active, which means any server members who join later, will be added by the bot to the smallest team. Roles are not rebalanced when a server member leaves. Once the `!divide stop` command was given, new members will not receive roles on joining anymore.",
+          "After `!divide start` was used, the division is active, which means any server members who join later, will be added by the bot to the smallest team. Roles are not rebalanced when a server member leaves. Once the `!divide stop` command was given (removes roles) or the bot went offline (will not remove roles), new members will not receive roles on joining anymore.",
       },
     ],
   };
